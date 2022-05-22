@@ -27,13 +27,15 @@ include_directories(
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++20 -O2")
 set (source_dir "${PROJECT_SOURCE_DIR}/src/")
 set (include_dir "${CMAKE_SOURCE_DIR}/include/")
+set (shader_dir "${CMAKE_SOURCE_DIR}/shaders/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-file (GLOB source_files "${source_dir}/*.cpp" "${include_dir}/*.hpp")
+file (GLOB source_files "${source_dir}/*.cpp" "${include_dir}/*.hpp" "${shader_dir}/*.*")
 
 add_executable (VulkanTest ${source_files})
 
-target_include_directories(VulkanTest PUBLIC "${include_dir}")
+target_include_directories(VulkanTest PUBLIC "${include_dir}" "${shader_dir}")
 target_link_libraries(VulkanTest glfw vulkan dl pthread X11 Xxf86vm Xrandr Xi)
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD COMMAND cd ${CMAKE_SOURCE_DIR}/shaders/ && ./compile.sh)

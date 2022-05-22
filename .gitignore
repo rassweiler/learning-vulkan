@@ -44,3 +44,6 @@ CMakeFiles
 *.workspace
 .codelite/*
 .ctagsd/*
+
+# Vulkan
+*.spv

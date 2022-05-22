@@ -1,4 +1,4 @@
-# Vulkan Linux Project Base
+# Vulkan Linux Learning
 
 ## Setup
 
@@ -9,9 +9,9 @@ Skip the makefile section as this project uses cmake.
 The build script can be modified for a different IDE (Uses CodeLite as is).
 
 ```zsh
-git clone https://github.com/rassweiler/vulkan-linux-base.git
+git clone https://github.com/rassweiler/learning-vulkan.git
 
-cd vulkan-linux-base
+cd learning-vulkan
 
 sudo chmod +x build.sh
 
