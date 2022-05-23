@@ -187,4 +187,8 @@ namespace rve {
 
 		return configInfo;
 	}
+
+	void RvePipeline::Bind(VkCommandBuffer commandBuffer) {
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	}
 } // namespace rve

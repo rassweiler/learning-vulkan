@@ -45,5 +45,6 @@ namespace rve {
 		RvePipeline &operator=(const RvePipeline &) = delete;
 
 		static RvePipelineConfigInfo DefaultPipelineConfigInfo(uint32_t width, uint32_t height);
+		void Bind(VkCommandBuffer commandBuffer);
 	};
 } // namespace rve

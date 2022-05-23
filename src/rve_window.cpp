@@ -27,4 +27,8 @@ namespace rve {
 			throw std::runtime_error("(rve_window.cpp) Failed to create window surface");
 		}
 	}
+
+	VkExtent2D RveWindow::GetExtent() {
+		return {static_cast<uint32_t>(windowWidth), static_cast<uint32_t>(windowHeight)};
+	}
 } // namespace rve

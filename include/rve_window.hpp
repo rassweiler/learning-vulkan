@@ -25,5 +25,6 @@ namespace rve {
 
 		bool ShouldClose();
 		void CreateWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
+		VkExtent2D GetExtent();
 	};
 } // namespace rve
