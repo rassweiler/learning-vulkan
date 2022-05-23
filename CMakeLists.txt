@@ -24,7 +24,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/include/
 )
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++20 -O2")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++20 -O2")
 set (source_dir "${PROJECT_SOURCE_DIR}/src/")
 set (include_dir "${CMAKE_SOURCE_DIR}/include/")
 set (shader_dir "${CMAKE_SOURCE_DIR}/shaders/")
