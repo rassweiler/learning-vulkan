@@ -5,6 +5,7 @@
 
 namespace rve {
 	RveEngine::RveEngine() {
+		LoadModels();
 		CreatePipelineLayout();
 		CreatePipeline();
 		CreateCommandBuffers();
@@ -77,7 +78,8 @@ namespace rve {
 			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 			rvePipeline->Bind(commandBuffers[i]);
-			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+			rveModel->Bind(commandBuffers[i]);
+			rveModel->Draw(commandBuffers[i]);
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -100,6 +102,16 @@ namespace rve {
 		if(result != VK_SUCCESS) {
 			throw std::runtime_error("(rve_engine.cpp) Failed to show swap chain image");
 		}
+	}
+
+	void RveEngine::LoadModels() {
+		std::vector<RveModel::Vertex> vertices {
+			{{0.0f, -0.5f}},
+			{{0.5f, 0.5f}},
+			{{-0.5f, 0.5f}}
+		};
+
+		rveModel = std::make_unique<RveModel>(rveVulkanDevice, vertices);
 	}
 
 	void RveEngine::Run() {

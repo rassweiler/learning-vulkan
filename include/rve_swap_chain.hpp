@@ -41,7 +41,7 @@ namespace rve {
 		RveSwapChain(RveVulkanDevice &deviceRef, VkExtent2D windowExtent);
 		~RveSwapChain();
 		RveSwapChain(const RveSwapChain &) = delete;
-		void operator=(const RveSwapChain &) = delete;
+		RveSwapChain &operator=(const RveSwapChain &) = delete;
 
 		VkFramebuffer GetFrameBuffer(int index) { return swapChainFramebuffers[index]; }
 		VkRenderPass GetRenderPass() { return renderPass; }
