@@ -8,8 +8,7 @@
 namespace rve {
 	struct RvePipelineConfigInfo {
 		uint32_t subpass = 0;
-		VkViewport viewport;
-		VkRect2D scissor;
+		VkPipelineViewportStateCreateInfo viewportInfo;
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo;
 		VkPipelineRasterizationStateCreateInfo rasterizationInfo;
 		VkPipelineMultisampleStateCreateInfo multisampleInfo;
@@ -18,6 +17,8 @@ namespace rve {
 		VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
 		VkPipelineLayout pipelineLayout = nullptr;
 		VkRenderPass renderPass = nullptr;
+		std::vector<VkDynamicState> dynamicStateEnables;
+		VkPipelineDynamicStateCreateInfo dynamicStateInfo;
 	};
 
 	class RvePipeline {
@@ -44,7 +45,7 @@ namespace rve {
 		RvePipeline(const RvePipeline &) = delete;
 		RvePipeline &operator=(const RvePipeline &) = delete;
 
-		static RvePipelineConfigInfo DefaultPipelineConfigInfo(uint32_t width, uint32_t height);
+		static void DefaultPipelineConfigInfo(RvePipelineConfigInfo &configInfo);
 		void Bind(VkCommandBuffer commandBuffer);
 	};
 } // namespace rve

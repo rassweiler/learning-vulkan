@@ -15,12 +15,15 @@ namespace rve {
 		void CreatePipelineLayout();
 		void CreatePipeline();
 		void CreateCommandBuffers();
+		void FreeCommandBuffers();
 		void DrawFrame();
 		void LoadModels();
+		void RecreateSwapChain();
+		void RecordCommandBuffer(int imageIndex);
 
 		RveWindow rveWindow{windowWidth, windowHeight, "Vulkan Test"};
 		RveVulkanDevice rveVulkanDevice{rveWindow};
-		RveSwapChain rveSwapChain{rveVulkanDevice, rveWindow.GetExtent()};
+		std::unique_ptr<RveSwapChain> rveSwapChain;
 		std::unique_ptr<RvePipeline> rvePipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;

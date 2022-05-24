@@ -11,13 +11,14 @@
 namespace rve {
 	RveSwapChain::RveSwapChain(RveVulkanDevice &deviceRef, VkExtent2D extent)
 		: vulkanDevice{deviceRef}, windowExtent{extent} {
-			CreateSwapChain();
-			CreateImageViews();
-			CreateRenderPass();
-			CreateDepthResources();
-			CreateFramebuffers();
-			CreateSyncObjects();
-}
+			Init();
+	}
+
+	RveSwapChain::RveSwapChain(RveVulkanDevice &deviceRef, VkExtent2D extent, std::shared_ptr<RveSwapChain> previousSwapChain)
+		: vulkanDevice{deviceRef}, windowExtent{extent}, oldSwapChain{previousSwapChain} {
+			Init();
+			oldSwapChain = nullptr;
+	}
 
 	RveSwapChain::~RveSwapChain() {
 		for (auto imageView : swapChainImageViews) {
@@ -115,6 +116,15 @@ namespace rve {
 		return result;
 	}
 
+	void RveSwapChain::Init() {
+		CreateSwapChain();
+		CreateImageViews();
+		CreateRenderPass();
+		CreateDepthResources();
+		CreateFramebuffers();
+		CreateSyncObjects();
+	}
+
 	void RveSwapChain::CreateSwapChain() {
 		SwapChainSupportDetails swapChainSupport = vulkanDevice.GetSwapChainSupport();
 
@@ -158,7 +168,7 @@ namespace rve {
 		createInfo.presentMode = presentMode;
 		createInfo.clipped = VK_TRUE;
 
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
 
 		if (vkCreateSwapchainKHR(vulkanDevice.Device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create swap chain!");

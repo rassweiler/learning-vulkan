@@ -7,7 +7,7 @@ namespace rve {
 	RveEngine::RveEngine() {
 		LoadModels();
 		CreatePipelineLayout();
-		CreatePipeline();
+		RecreateSwapChain();
 		CreateCommandBuffers();
 	}
 
@@ -29,8 +29,9 @@ namespace rve {
 	}
 
 	void RveEngine::CreatePipeline() {
-		auto pipelineConfig = RvePipeline::DefaultPipelineConfigInfo(rveSwapChain.Width(), rveSwapChain.Height());
-		pipelineConfig.renderPass = rveSwapChain.GetRenderPass();
+		RvePipelineConfigInfo pipelineConfig{};
+		RvePipeline::DefaultPipelineConfigInfo(pipelineConfig);
+		pipelineConfig.renderPass = rveSwapChain->GetRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
 		rvePipeline = std::make_unique<RvePipeline>(
 			rveVulkanDevice,
@@ -41,7 +42,7 @@ namespace rve {
 	}
 
 	void RveEngine::CreateCommandBuffers() {
-		commandBuffers.resize(rveSwapChain.ImageCount());
+		commandBuffers.resize(rveSwapChain->ImageCount());
 
 		VkCommandBufferAllocateInfo allocateInfo{};
 		allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -54,50 +55,40 @@ namespace rve {
 		}
 
 		for (int i =0; i < commandBuffers.size(); i++) {
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-			if(vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-				throw std::runtime_error("(rve_engine.cpp) Failed to start recording command buffer");
-			}
-
-			VkRenderPassBeginInfo renderPassInfo{};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = rveSwapChain.GetRenderPass();
-			renderPassInfo.framebuffer = rveSwapChain.GetFrameBuffer(i);
-			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent = rveSwapChain.GetSwapChainExtent();
-
-			std::array<VkClearValue, 2> clearValues{};
-			clearValues[0].color = {0.1f, 0.1f, 0.2f, 1.0f};
-			clearValues[1].depthStencil = {1.0f, 0};
-
-			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-			renderPassInfo.pClearValues = clearValues.data();
-
-			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			rvePipeline->Bind(commandBuffers[i]);
-			rveModel->Bind(commandBuffers[i]);
-			rveModel->Draw(commandBuffers[i]);
-
-			vkCmdEndRenderPass(commandBuffers[i]);
-
-			if(vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
-				throw std::runtime_error("(rve_engine.cpp) Failed to end recording command buffer");
-			}
+			
 		}
+	}
+
+	void RveEngine::FreeCommandBuffers() {
+		vkFreeCommandBuffers(rveVulkanDevice.Device(), 
+			rveVulkanDevice.GetCommandPool(), 
+			static_cast<uint32_t>(commandBuffers.size()), 
+			commandBuffers.data()
+		);
+		commandBuffers.clear();
 	}
 
 	void RveEngine::DrawFrame() {
 		uint32_t imageIndex;
-		auto result = rveSwapChain.AcquireNextImage(&imageIndex);
+		auto result = rveSwapChain->AcquireNextImage(&imageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			RecreateSwapChain();
+			return;
+		}
 
 		if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 			throw std::runtime_error("(rve_engine.cpp) Failed to get swap chain image");
 		}
 
-		result = rveSwapChain.SubmitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+		RecordCommandBuffer(imageIndex);
+		result = rveSwapChain->SubmitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+
+		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || rveWindow.isWindowResized()) {
+			rveWindow.ResetWindowResizedFlag();
+			RecreateSwapChain();
+			return;
+		}
 
 		if(result != VK_SUCCESS) {
 			throw std::runtime_error("(rve_engine.cpp) Failed to show swap chain image");
@@ -112,6 +103,75 @@ namespace rve {
 		};
 
 		rveModel = std::make_unique<RveModel>(rveVulkanDevice, vertices);
+	}
+
+	void RveEngine::RecreateSwapChain() {
+		auto extend = rveWindow.GetExtent();
+		while (extend.width == 0 || extend.height == 0) {
+			extend = rveWindow.GetExtent();
+			glfwWaitEvents();
+		}
+
+		vkDeviceWaitIdle(rveVulkanDevice.Device());
+		rveSwapChain = nullptr;
+
+		if(rveSwapChain == nullptr) {
+			rveSwapChain = std::make_unique<RveSwapChain>(rveVulkanDevice, extend);
+		} else {
+			rveSwapChain = std::make_unique<RveSwapChain>(rveVulkanDevice, extend, std::move(rveSwapChain));
+			if(rveSwapChain->ImageCount() != commandBuffers.size()) {
+				FreeCommandBuffers();
+				CreateCommandBuffers();
+			}
+		}
+		
+		CreatePipeline();
+	}
+	
+	void RveEngine::RecordCommandBuffer(int imageIndex) {
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		if(vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("(rve_engine.cpp) Failed to start recording command buffer");
+		}
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = rveSwapChain->GetRenderPass();
+		renderPassInfo.framebuffer = rveSwapChain->GetFrameBuffer(imageIndex);
+		renderPassInfo.renderArea.offset = {0, 0};
+		renderPassInfo.renderArea.extent = rveSwapChain->GetSwapChainExtent();
+
+		std::array<VkClearValue, 2> clearValues{};
+		clearValues[0].color = {0.1f, 0.1f, 0.2f, 1.0f};
+		clearValues[1].depthStencil = {1.0f, 0};
+
+		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassInfo.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(rveSwapChain->GetSwapChainExtent().width);
+		viewport.height = static_cast<float>(rveSwapChain->GetSwapChainExtent().height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		VkRect2D scissor{{0, 0}, rveSwapChain->GetSwapChainExtent()};
+		vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
+
+		rvePipeline->Bind(commandBuffers[imageIndex]);
+		rveModel->Bind(commandBuffers[imageIndex]);
+		rveModel->Draw(commandBuffers[imageIndex]);
+
+		vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+		if(vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+			throw std::runtime_error("(rve_engine.cpp) Failed to end recording command buffer");
+		}
 	}
 
 	void RveEngine::Run() {

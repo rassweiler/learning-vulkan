@@ -5,10 +5,12 @@
 #include <vulkan/vulkan.h>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace rve {
 	class RveSwapChain {
 	private:
+		void Init();
 		void CreateSwapChain();
 		void CreateImageViews();
 		void CreateDepthResources();
@@ -31,6 +33,7 @@ namespace rve {
 		RveVulkanDevice &vulkanDevice;
 		VkExtent2D windowExtent;
 		VkSwapchainKHR swapChain;
+		std::shared_ptr<RveSwapChain> oldSwapChain;
 		std::vector<VkSemaphore> imageAvailableSemaphores;
 		std::vector<VkSemaphore> renderFinishedSemaphores;
 		std::vector<VkFence> inFlightFences;
@@ -39,6 +42,7 @@ namespace rve {
 
 	public:
 		RveSwapChain(RveVulkanDevice &deviceRef, VkExtent2D windowExtent);
+		RveSwapChain(RveVulkanDevice &deviceRef, VkExtent2D windowExtent, std::shared_ptr<RveSwapChain> previousSwapChain);
 		~RveSwapChain();
 		RveSwapChain(const RveSwapChain &) = delete;
 		RveSwapChain &operator=(const RveSwapChain &) = delete;
