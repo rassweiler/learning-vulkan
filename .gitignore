@@ -47,3 +47,6 @@ CMakeFiles
 
 # Vulkan
 *.spv
+
+# Code -OSS
+.vscode/*

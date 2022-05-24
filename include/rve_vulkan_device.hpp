@@ -65,6 +65,8 @@ namespace rve {
 		~RveVulkanDevice();
 		RveVulkanDevice(const RveVulkanDevice &) = delete;
 		RveVulkanDevice &operator=(const RveVulkanDevice &) = delete;
+		RveVulkanDevice(const RveVulkanDevice &&) = delete;
+		RveVulkanDevice &operator=(const RveVulkanDevice &&) = delete;
 
 		VkCommandPool GetCommandPool() { return commandPool; }
 		VkDevice Device() { return device_; }

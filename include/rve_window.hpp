@@ -10,8 +10,8 @@ namespace rve {
 	private:
 		void Init();
 
-		const int windowWidth;
-		const int windowHeight;
+		int windowWidth;
+		int windowHeight;
 
 		std::string windowName;
 

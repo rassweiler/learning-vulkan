@@ -34,8 +34,8 @@ namespace rve {
 		pipelineConfig.pipelineLayout = pipelineLayout;
 		rvePipeline = std::make_unique<RvePipeline>(
 			rveVulkanDevice,
-			"../shaders/simple_shader.vert.spv",
-			"../shaders/simple_shader.frag.spv",
+			"shaders/simple_shader.vert.spv",
+			"shaders/simple_shader.frag.spv",
 			pipelineConfig
 		);
 	}
