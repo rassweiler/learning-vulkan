@@ -1,9 +1,17 @@
 #include "../include/rve_engine.hpp"
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
 #include <stdexcept>
 #include <array>
 
 namespace rve {
+	struct RveSimplePushConstantData {
+		glm::vec2 offset;
+		alignas(16) glm::vec3 color;
+	};
+
 	RveEngine::RveEngine() {
 		LoadModels();
 		CreatePipelineLayout();
@@ -16,12 +24,17 @@ namespace rve {
 	}
 
 	void RveEngine::CreatePipelineLayout() {
+		VkPushConstantRange pushConstantRange;
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		pushConstantRange.offset = 0;
+		pushConstantRange.size = sizeof(RveSimplePushConstantData);
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 0;
 		pipelineLayoutInfo.pSetLayouts = nullptr;
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
 		if(vkCreatePipelineLayout(rveVulkanDevice.Device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
 			throw std::runtime_error("(rve_engine.cpp) Failed to create pipeline layout");
@@ -165,7 +178,20 @@ namespace rve {
 
 		rvePipeline->Bind(commandBuffers[imageIndex]);
 		rveModel->Bind(commandBuffers[imageIndex]);
-		rveModel->Draw(commandBuffers[imageIndex]);
+		for(int i = 0; i < 4; i++) {
+			RveSimplePushConstantData push{};
+			push.offset = {0.0f, -0.4f + i * 0.25f};
+			push.color = {0.0f, 0.0f, 0.2f + 0.2f * i};
+			vkCmdPushConstants(
+				commandBuffers[imageIndex], 
+				pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+				0, 
+				sizeof(RveSimplePushConstantData), 
+				&push
+			);
+			rveModel->Draw(commandBuffers[imageIndex]);
+		}
 
 		vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
