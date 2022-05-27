@@ -3,17 +3,19 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <stdexcept>
 #include <array>
 
 namespace rve {
 	struct RveSimplePushConstantData {
+		glm::mat2 tranform{1.0f};
 		glm::vec2 offset;
 		alignas(16) glm::vec3 color;
 	};
 
 	RveEngine::RveEngine() {
-		LoadModels();
+		LoadGameObjects();
 		CreatePipelineLayout();
 		RecreateSwapChain();
 		CreateCommandBuffers();
@@ -108,14 +110,21 @@ namespace rve {
 		}
 	}
 
-	void RveEngine::LoadModels() {
+	void RveEngine::LoadGameObjects() {
 		std::vector<RveModel::Vertex> vertices {
 		{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
 			{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
 			{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 		};
 
-		rveModel = std::make_unique<RveModel>(rveVulkanDevice, vertices);
+		auto rveModel = std::make_shared<RveModel>(rveVulkanDevice, vertices);
+		auto triangle = RveGameObject::CreateGameObject();
+		triangle.model = rveModel;
+		triangle.color = {0.2f, 0.6f, 0.1f};
+		triangle.transform2d.translation.x = 0.2f;
+		triangle.transform2d.scale = {2.0f, 0.5f};
+		triangle.transform2d.rotation = 0.25f * glm::two_pi<float>();
+		rveGameObjects.push_back(std::move(triangle));
 	}
 
 	void RveEngine::RecreateSwapChain() {
@@ -176,27 +185,40 @@ namespace rve {
 		vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
 
-		rvePipeline->Bind(commandBuffers[imageIndex]);
-		rveModel->Bind(commandBuffers[imageIndex]);
-		for(int i = 0; i < 4; i++) {
+		RenderGameObjects(commandBuffers[imageIndex]);
+
+		vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+		if(vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+			throw std::runtime_error("(rve_engine.cpp) Failed to end recording command buffer");
+		}
+	}
+
+	void RveEngine::RenderGameObjects(VkCommandBuffer commandBuffer) {
+		int i = 0;
+		for(auto& object: rveGameObjects) {
+			i += 1;
+			object.transform2d.rotation = glm::mod<float>(
+				object.transform2d.rotation + 0.001f * i, 2.0f * glm::pi<float>()
+			);
+		}
+		rvePipeline->Bind(commandBuffer);
+		for(auto& object: rveGameObjects) {
+			object.transform2d.rotation = glm::mod(object.transform2d.rotation + 0.01f, glm::two_pi<float>());
 			RveSimplePushConstantData push{};
-			push.offset = {0.0f, -0.4f + i * 0.25f};
-			push.color = {0.0f, 0.0f, 0.2f + 0.2f * i};
+			push.offset = object.transform2d.translation;
+			push.color = object.color;
+			push.tranform = object.transform2d.mat2();
 			vkCmdPushConstants(
-				commandBuffers[imageIndex], 
+				commandBuffer, 
 				pipelineLayout,
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
 				0, 
 				sizeof(RveSimplePushConstantData), 
 				&push
 			);
-			rveModel->Draw(commandBuffers[imageIndex]);
-		}
-
-		vkCmdEndRenderPass(commandBuffers[imageIndex]);
-
-		if(vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
-			throw std::runtime_error("(rve_engine.cpp) Failed to end recording command buffer");
+			object.model->Bind(commandBuffer);
+			object.model->Draw(commandBuffer);
 		}
 	}
 

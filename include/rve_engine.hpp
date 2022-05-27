@@ -4,7 +4,7 @@
 #include "rve_window.hpp"
 #include "rve_vulkan_device.hpp"
 #include "rve_swap_chain.hpp"
-#include "rve_model.hpp"
+#include "rve_game_object.hpp"
 
 #include <memory>
 #include <vector>
@@ -17,9 +17,10 @@ namespace rve {
 		void CreateCommandBuffers();
 		void FreeCommandBuffers();
 		void DrawFrame();
-		void LoadModels();
+		void LoadGameObjects();
 		void RecreateSwapChain();
 		void RecordCommandBuffer(int imageIndex);
+		void RenderGameObjects(VkCommandBuffer commandBuffer);
 
 		RveWindow rveWindow{windowWidth, windowHeight, "Vulkan Test"};
 		RveVulkanDevice rveVulkanDevice{rveWindow};
@@ -27,7 +28,7 @@ namespace rve {
 		std::unique_ptr<RvePipeline> rvePipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<RveModel> rveModel;
+		std::vector<RveGameObject> rveGameObjects;
 
 	public:
 		RveEngine();
