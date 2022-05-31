@@ -22,6 +22,7 @@ namespace rve {
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
 
 		VkFormat swapChainImageFormat;
+		VkFormat swapChainDepthFormat;
 		VkExtent2D swapChainExtent;
 		std::vector<VkFramebuffer> swapChainFramebuffers;
 		VkRenderPass renderPass;
@@ -30,7 +31,7 @@ namespace rve {
 		std::vector<VkImageView> depthImageViews;
 		std::vector<VkImage> swapChainImages;
 		std::vector<VkImageView> swapChainImageViews;
-		RveVulkanDevice &vulkanDevice;
+		RveVulkanDevice &rveVulkanDevice;
 		VkExtent2D windowExtent;
 		VkSwapchainKHR swapChain;
 		std::shared_ptr<RveSwapChain> oldSwapChain;
@@ -61,6 +62,9 @@ namespace rve {
 		VkFormat FindDepthFormat();
 		VkResult AcquireNextImage(uint32_t *imageIndex);
 		VkResult SubmitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
+		bool CompareSwapFormats(const RveSwapChain& swapChain) const {
+			return swapChain.swapChainDepthFormat == swapChainDepthFormat && swapChain.swapChainImageFormat == swapChainImageFormat;
+		}
 
 		static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 	};

@@ -23,8 +23,14 @@ namespace rve {
 		bool IsFrameInProgress() const { return isFrameStarted; }
 		VkRenderPass GetSwapChainRenderPass() const { return rveSwapChain->GetRenderPass(); }
 		VkCommandBuffer GetCurrentCommandBuffer() const { 
-			assert(isFrameStarted && "(rve_renderer.hpp) Cannot get command buffer out of frame progress");
-			return commandBuffers[currentImageIndex]; 
+			assert(isFrameStarted && 
+			"(rve_renderer.hpp) Cannot get command buffer out of frame progress");
+			return commandBuffers[currentFrameIndex]; 
+		}
+		int GetFrameIndex() const {
+			assert(isFrameStarted && 
+			"(rve_renderer.cpp) Cannot get frame index when frame not in progress");
+			return currentFrameIndex;
 		}
 	
 	private:
@@ -37,6 +43,7 @@ namespace rve {
 		std::unique_ptr<RveSwapChain> rveSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
 		uint32_t currentImageIndex;
+		int currentFrameIndex{0};
 		bool isFrameStarted{false};
 	};
 } // namespace rve

@@ -48,16 +48,17 @@ namespace rve {
 		}
 		auto result = rveSwapChain->SubmitCommandBuffers(&commandBuffer, &currentImageIndex);
 
-		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || rveWindow.isWindowResized()) {
-			rveWindow.ResetWindowResizedFlag();
-			RecreateSwapChain();
-		}
-
-		if(result != VK_SUCCESS) {
+		if(result == VK_ERROR_OUT_OF_DATE_KHR || 
+			result == VK_SUBOPTIMAL_KHR || 
+			rveWindow.isWindowResized()) {
+				rveWindow.ResetWindowResizedFlag();
+				RecreateSwapChain();
+		} else if(result != VK_SUCCESS) {
 			throw std::runtime_error("(rve_engine.cpp) Failed to show swap chain image");
 		}
 
 		isFrameStarted = false;
+		currentFrameIndex = (currentFrameIndex + 1) % RveSwapChain::MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void RveRenderer::BeginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
@@ -110,7 +111,7 @@ namespace rve {
 	}
 
 	void RveRenderer::CreateCommandBuffers() {
-		commandBuffers.resize(rveSwapChain->ImageCount());
+		commandBuffers.resize(RveSwapChain::MAX_FRAMES_IN_FLIGHT);
 
 		VkCommandBufferAllocateInfo allocateInfo{};
 		allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -145,11 +146,11 @@ namespace rve {
 		if(rveSwapChain == nullptr) {
 			rveSwapChain = std::make_unique<RveSwapChain>(rveVulkanDevice, extend);
 		} else {
-			rveSwapChain = std::make_unique<RveSwapChain>(rveVulkanDevice, extend, std::move(rveSwapChain));
-			if(rveSwapChain->ImageCount() != commandBuffers.size()) {
-				FreeCommandBuffers();
-				CreateCommandBuffers();
-			}
+			std::shared_ptr<RveSwapChain> oldSwapChain = std::move(rveSwapChain);
+			rveSwapChain = std::make_unique<RveSwapChain>(rveVulkanDevice, extend, oldSwapChain);
+			if(!oldSwapChain->CompareSwapFormats(*rveSwapChain.get())) {
+				throw std::runtime_error("(rve_renderer.cpp) Swap chain image format has changed");
+			}			
 		}
 	}
 } // namespace rve
