@@ -25,6 +25,7 @@ namespace rve {
 	
 	private:
 		void LoadGameObjects();
+		std::unique_ptr<RveModel> Create3DTestModel(RveVulkanDevice& device, glm::vec3 offset);
 
 		RveWindow rveWindow{windowWidth, windowHeight, "Vulkan Test"};
 		RveVulkanDevice rveVulkanDevice{rveWindow};

@@ -9,9 +9,8 @@
 
 namespace rve {
 	struct RveSimplePushConstantData {
-		glm::mat2 tranform{1.0f};
-		glm::vec2 offset;
-		alignas(16) glm::vec3 color;
+		glm::mat4 tranform{1.0f};
+		alignas(16) glm::vec3 color{};
 	};
 
 	RveRenderSystem::RveRenderSystem(RveVulkanDevice& device, VkRenderPass renderPass) : 
@@ -63,20 +62,20 @@ namespace rve {
 	void RveRenderSystem::RenderGameObjects(
 		VkCommandBuffer commandBuffer, 
 		std::vector<RveGameObject>& gameObjects) {
-			int i = 0;
+			/* int i = 0;
 			for(auto& object: gameObjects) {
 				i += 1;
-				object.transform2d.rotation = glm::mod<float>(
-					object.transform2d.rotation + 0.001f * i, 2.0f * glm::pi<float>()
+				object.transform.rotation.y = glm::mod<float>(
+					object.transform.rotation.y + 0.001f * i, 2.0f * glm::pi<float>()
 				);
-			}
+			} */
 			rvePipeline->Bind(commandBuffer);
 			for(auto& object: gameObjects) {
-				object.transform2d.rotation = glm::mod(object.transform2d.rotation + 0.01f, glm::two_pi<float>());
+				object.transform.rotation.y = glm::mod(object.transform.rotation.y + 0.01f, glm::two_pi<float>());
+				object.transform.rotation.x = glm::mod(object.transform.rotation.x + 0.01f, glm::two_pi<float>());
 				RveSimplePushConstantData push{};
-				push.offset = object.transform2d.translation;
 				push.color = object.color;
-				push.tranform = object.transform2d.mat2();
+				push.tranform = object.transform.mat4();
 				vkCmdPushConstants(
 					commandBuffer, 
 					pipelineLayout,

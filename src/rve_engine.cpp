@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <stdexcept>
+#include <cassert>
 #include <array>
 
 namespace rve {
@@ -17,21 +18,74 @@ namespace rve {
 	}
 
 	void RveEngine::LoadGameObjects() {
-		std::vector<RveModel::Vertex> vertices {
-		{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-			{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-			{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-		};
+		std::shared_ptr<RveModel> rveModel = Create3DTestModel(
+			rveVulkanDevice, 
+			{0.0f, 0.0f, 0.0f}
+		);
+		auto cube = RveGameObject::CreateGameObject();
+		cube.model = rveModel;
+		cube.transform.translation = {0.0f, 0.0f, 0.5f};
+		cube.transform.scale = {0.5f, 0.5f, 0.5f};
+		rveGameObjects.push_back(std::move(cube));
+	}
 
-		auto rveModel = std::make_shared<RveModel>(rveVulkanDevice, vertices);
-		auto triangle = RveGameObject::CreateGameObject();
-		triangle.model = rveModel;
-		triangle.color = {0.2f, 0.6f, 0.1f};
-		triangle.transform2d.translation.x = 0.2f;
-		triangle.transform2d.scale = {2.0f, 0.5f};
-		triangle.transform2d.rotation = 0.25f * glm::two_pi<float>();
-		rveGameObjects.push_back(std::move(triangle));
-	}	
+	//TODO: Delete after 3d tests
+	std::unique_ptr<RveModel> RveEngine::Create3DTestModel(RveVulkanDevice& device, glm::vec3 offset) {
+		std::vector<RveModel::Vertex> vertices{
+			// left face (white)
+			{{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+			{{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+			{{-.5f, -.5f, .5f}, {.9f, .9f, .9f}},
+			{{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+			{{-.5f, .5f, -.5f}, {.9f, .9f, .9f}},
+			{{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+
+			// right face (yellow)
+			{{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+			{{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+			{{.5f, -.5f, .5f}, {.8f, .8f, .1f}},
+			{{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+			{{.5f, .5f, -.5f}, {.8f, .8f, .1f}},
+			{{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+
+			// top face (orange, remember y axis points down)
+			{{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+			{{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+			{{-.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+			{{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+			{{.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+			{{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+
+			// bottom face (red)
+			{{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+			{{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+			{{-.5f, .5f, .5f}, {.8f, .1f, .1f}},
+			{{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+			{{.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+			{{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+
+			// nose face (blue)
+			{{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+			{{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+			{{-.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+			{{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+			{{.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+			{{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+
+			// tail face (green)
+			{{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+			{{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+			{{-.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+			{{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+			{{.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+			{{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+
+		};
+		for (auto& v : vertices) {
+			v.position += offset;
+		}
+		return std::make_unique<RveModel>(device, vertices);
+	} //TODO: Delete after 3d tests
 
 	void RveEngine::Run() {
 		RveRenderSystem renderSystem{rveVulkanDevice, rveRenderer.GetSwapChainRenderPass()};
